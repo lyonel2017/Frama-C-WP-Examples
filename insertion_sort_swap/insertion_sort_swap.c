@@ -24,20 +24,7 @@
         same_elements{L1, L2}(a, b, begin, end) ==>
         same_elements{L2, L3}(b, c, begin, end) ==>
         same_elements{L1, L3}(a, c, begin, end);
-      case split {L1, L2}: \forall int *a, int *b, integer begin, i, end;
-        begin <= i < end ==>
-        same_elements{L1,L2}(a, b, begin, i) ==>
-        same_elements{L1,L2}(a, b, i, end) ==>
-        same_elements{L1,L2}(a, b, begin, end);
 }*/
-
-/*@ lemma partition {L1, L2}: \forall int *a, int *b, integer begin, i, j, end;
-        begin <= i <= j < end ==>
-        same_array{L1,L2}(a, b, begin, i) ==>
-        same_elements{L1,L2}(a, b, i, j) ==>
-        same_array{L1,L2}(a, b, j, end) ==>
-        same_elements{L1, L2}(a, b, begin, end);
-*/
 
 /*@ requires \valid(x) && \valid(y);
    requires \separated(x,y);
@@ -49,14 +36,14 @@ void swap(int *x, int *y){
   *y = t;
 }
 
-/*@ requires 0 <= n;
+/*@ requires 0 <= n <= end;
     requires sorted(tab,n);
-    requires \valid(tab+(0..n));
+    requires \valid(tab+(0..end));
     ensures sorted(tab,n+1);
-    ensures same_elements{Pre,Post}(tab,tab,0,n+1);
+    ensures same_elements{Pre,Post}(tab,tab,0,end+1);
     assigns tab[0..n];
 */
-void decale(int tab[], int n){
+void decale(int tab[], int n) /*@ ghost(int end)*/{
   int i = n;
   /*@ loop invariant 0 <= i <= n;
      loop invariant \forall int j; 0 <= j < i ==> tab[j] == \at(tab[j],Pre);
@@ -64,13 +51,13 @@ void decale(int tab[], int n){
      loop invariant \forall int j,k; i < j < k <= n ==> tab[j] <= tab[k];
      loop invariant \forall int j,k; 0 <= j  < i < k <= n ==> tab[j] <= tab[k];
      loop invariant \forall int j,k; 0 <= j < k < i ==> tab[j] <= tab[k];
-     loop invariant same_elements{Pre,Here}(tab,tab,0,n+1);
+     loop invariant same_elements{Pre,Here}(tab,tab,0,end+1);
      loop assigns i, tab[0..n];
      loop variant i;
    */
   while (i > 0 && tab[i-1] > tab[i]){
   l1:swap(tab+i, tab+(i-1));
-    /*@ assert swap{l1,Here}(tab,tab,0,i,i-1,n+1);*/
+    /*@ assert swap{l1,Here}(tab,tab,0,i,i-1,end+1);*/
     i--;
   }
   return;
@@ -83,15 +70,16 @@ void decale(int tab[], int n){
     assigns tab[0..n-1];*/
 void tri_insertion(int tab[], int n){
   int lim;
+  /*@ ghost int n_g = n;*/
   /*@ loop invariant 0 <= lim <= n;
       loop invariant sorted(tab,lim);
-      loop invariant same_elements{Pre,Here}(tab,tab,0,n);
+      loop invariant same_elements{Pre,Here}(tab,tab,0,n+1);
       loop assigns tab[0..n-1],lim;
       loop variant n - lim;
    */
   for (lim = 0; lim < n; lim++){
-  l1:decale(tab,lim);
-    /*@ assert same_elements{l1,Here}(tab,tab,0,n);*/
+  l1:decale(tab,lim)/*@ ghost(n_g)*/;
+    /*@ assert same_elements{l1,Here}(tab,tab,0,n+1);*/
   }
   return;
 }
