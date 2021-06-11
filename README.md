@@ -59,10 +59,10 @@
             <td>DONE</td>
             <td></td>
         </tr>
-        <!-- <tr> -->
-        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/voting">voting</td> -->
-        <!--     <td>WIP</td> -->
-        <!--     <td>Watting for WP feature to proof lemma</td> -->
-        <!-- </tr> -->
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/voting">voting</td>
+            <td>DONE</td>
+            <td></td>
+        </tr>
 </tbody>
 </table>
