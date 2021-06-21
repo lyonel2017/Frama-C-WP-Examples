@@ -109,17 +109,22 @@ int bordaCountVoting(int** votes) {
          sum(t,i,k,c) == sum(t,i,j,c) + sum(t,j,k,c);
 */
 
-/*@   lemma sum_4 {L1,L2}:
+/*@ lemma sum_4 {L1,L2}:
        \forall int** t1, int** t2, integer i, j, c;
          (\forall integer k; i <= k < j ==> \at(t1[k][c],L1) == \at(t2[k][c],L2)) ==>
          sum{L1}(t1,i,j,c) == sum{L2}(t2,i,j,c);
 */
 
-// relational property we want for sum
-/*@   lemma sum_ext{L1,L2} :
+/*@ lemma sum_ext{L1,L2} :
   @     \forall int** f, int** g, integer i, j, c, count;
   @     0 <= c < count ==>
   @     0 <= i <= j ==>
   @     same_elements{L1,L2}(f,g,i,j,count) ==>
   @     sum{L1}(f, i, j, c) == sum{L2}(g, i, j, c);
 */
+
+/*@ relational R1{
+      callset \call{l1,l2}(bordaCountVoting,_t1),\call{l3,l4}(bordaCountVoting,_t2);
+      requires same_elements{l1,l3}(\param(votes,_t1),\param(votes,_t2),0,V,C);
+      ensures \callresult(_t1) == \callresult(_t2);
+}*/
