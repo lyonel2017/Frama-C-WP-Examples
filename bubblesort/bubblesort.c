@@ -28,12 +28,13 @@
 }*/
 
 /*@ requires \valid(x) && \valid(y);
-   requires \separated(x,y);
-   ensures *x == \old(*y) && *y == \old(*x);
-   assigns *x,*y;*/
+    requires \separated(x,y);
+    ensures *x == \old(*y) && *y == \old(*x);
+    assigns *x,*y;
+*/
 void swap(int *x, int *y){
   int t = *x;
-  * x = *y;
+  *x = *y;
   *y = t;
 }
 
@@ -50,36 +51,35 @@ void bubblesort (int list[], int n) {
 
   /*@ ghost int  maximal_fixed_tail = n;*/
 
-
   /*@ loop invariant 0 <= sorted <= 1;
-    @ loop invariant same_elements{Pre, Here}(list,list,0,n);
-    @ loop invariant sorted(list,maximal_fixed_tail,n);
-    @ loop invariant 0 <= maximal_fixed_tail <= n;
-    @ loop invariant biggers(list,0,n,maximal_fixed_tail);
-    @ loop invariant sorted == 1 ==> maximal_fixed_tail == 0;
-    @ loop invariant sorted == 0 ==> maximal_fixed_tail > 0;
-    @ loop assigns sorted,list[0..n-1], maximal_fixed_tail;
-    @ loop variant maximal_fixed_tail;
+      loop invariant same_elements{Pre, Here}(list,list,0,n);
+      loop invariant sorted(list,maximal_fixed_tail,n);
+      loop invariant 0 <= maximal_fixed_tail <= n;
+      loop invariant biggers(list,0,n,maximal_fixed_tail);
+      loop invariant sorted == 1 ==> maximal_fixed_tail == 0;
+      loop invariant sorted == 0 ==> maximal_fixed_tail > 0;
+      loop assigns sorted,list[0..n-1], maximal_fixed_tail;
+      loop variant maximal_fixed_tail;
   */
   while(!sorted) {
     sorted=1;
-  /*@ ghost int idx = 0;*/
+    /*@ ghost int idx = 0;*/
 
     /*@ loop invariant 0 <= sorted <= 1;
-      @ loop invariant 0 <= i <=  n-1;
-      @ loop invariant same_elements{Pre, Here}(list,list, 0, n);
-      @ loop invariant \forall integer k; 0 <= k < i ==> list[k] <= list[i];
-      @ loop invariant \forall integer k; idx <= k < i ==> list[k] <= list[i];
-      @ loop invariant biggers(list,0,n,maximal_fixed_tail);
-      @ loop invariant sorted(list,maximal_fixed_tail,n);
-      @ loop invariant biggers(list,0,i,idx);
-      @ loop invariant sorted(list,idx,i);
-      @ loop invariant sorted == 1 <==> idx == 0;
-      @ loop invariant sorted == 0 <==> idx != 0;
-      @ loop invariant 0 <= idx <= i+1;
-      @ loop invariant idx < maximal_fixed_tail || idx == maximal_fixed_tail == 0;
-      @ loop assigns i, list[0..n-1], sorted, idx;
-      @ loop variant n - i;
+        loop invariant 0 <= i <=  n-1;
+        loop invariant same_elements{Pre, Here}(list,list, 0, n);
+        loop invariant \forall integer k; 0 <= k < i ==> list[k] <= list[i];
+        loop invariant \forall integer k; idx <= k < i ==> list[k] <= list[i];
+        loop invariant biggers(list,0,n,maximal_fixed_tail);
+        loop invariant sorted(list,maximal_fixed_tail,n);
+        loop invariant biggers(list,0,i,idx);
+        loop invariant sorted(list,idx,i);
+        loop invariant sorted == 1 <==> idx == 0;
+        loop invariant sorted == 0 <==> idx != 0;
+        loop invariant 0 <= idx <= i+1;
+        loop invariant idx < maximal_fixed_tail || idx == maximal_fixed_tail == 0;
+        loop assigns i, list[0..n-1], sorted, idx;
+        loop variant n - i;
     */
     for(int i = 0; i < n-1; i++) {
       //@ghost l1:;
