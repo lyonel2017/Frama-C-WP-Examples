@@ -57,10 +57,15 @@
         <tr>
             <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/sum">Sum</td>
             <td>DONE</td>
-            <td></td>
+            <td>Require option -wp-rte</td>
         </tr>
         <tr>
-            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/voting">voting</td>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/voting">Voting</td>
+            <td>WP</td>
+            <td>A relational property remains unproven (waiting for a RPP feature)</td>
+        </tr>
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/bubblesort">Bubblesort</td>
             <td>DONE</td>
             <td></td>
         </tr>
