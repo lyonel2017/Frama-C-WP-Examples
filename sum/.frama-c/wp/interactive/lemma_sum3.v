@@ -225,7 +225,8 @@ Parameter sconst: (addr -> Numbers.BinNums.Z) -> Prop.
 
 (* Why3 assumption *)
 Definition framed (m:addr -> addr) : Prop :=
-  forall (p:addr), ((region (base (m p))) <= 0%Z)%Z.
+  forall (p:addr), ((region (base p)) <= 0%Z)%Z ->
+  ((region (base (m p))) <= 0%Z)%Z.
 
 Axiom separated_included :
   forall (p:addr) (q:addr),
@@ -564,12 +565,13 @@ Theorem wp_goal :
     (i1:Numbers.BinNums.Z) (i2:Numbers.BinNums.Z),
   (i1 <= i2)%Z -> (i <= i1)%Z -> (0%Z <= i)%Z -> is_sint32_chunk t ->
   (((L_sum t a i i1) + (L_sum t a i1 i2))%Z = (L_sum t a i i2)).
+(* Why3 intros t a i i1 i2 h1 h2 h3 h4. *)
 Proof.
 intros.
 apply Zlt_lower_bound_ind with
-(P:= fun k => (L_sum t a i i1 + L_sum t a i1 k)%Z = L_sum t a i k)(z := i1) ;[| omega].
+(P:= fun k => (L_sum t a i i1 + L_sum t a i1 k)%Z = L_sum t a i k)(z := i1) ;[| Lia.lia].
 intros.
-assert (H5:(i1 = x \/ i1 < x)%Z) by omega.
+assert (H5:(i1 = x \/ i1 < x)%Z) by Lia.lia.
 destruct H5.
 - rewrite H5.
   rewrite (Q_sum1 _ _ x x).
@@ -577,17 +579,11 @@ destruct H5.
   reflexivity.
   reflexivity.
   assumption.
-- replace x with ((x-1)+1)%Z by omega.
-  generalize (H3 (x-1)%Z).
-  intros.
-  replace (x-1+1)%Z with (1+(x-1))%Z by omega.
-  rewrite <- Q_sum2.
-  rewrite <- Q_sum2.
-  rewrite <- H6.
+- replace x with (1 + (x-1))%Z by Lia.lia.
+  rewrite <- (Q_sum2 t a i (x -1));[ | Lia.lia| assumption| apply H2].
+  rewrite <- (Q_sum2 t a i1 (x -1));[ | Lia.lia| assumption| apply H2].
+  rewrite <- (H3 (x-1)%Z) by Lia.lia.
   rewrite Z.add_assoc.
   reflexivity.
-  all:try omega.
-  all:try assumption.
-  apply H2.
-  apply H2.
 Qed.
+

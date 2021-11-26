@@ -225,7 +225,8 @@ Parameter sconst: (addr -> Numbers.BinNums.Z) -> Prop.
 
 (* Why3 assumption *)
 Definition framed (m:addr -> addr) : Prop :=
-  forall (p:addr), ((region (base (m p))) <= 0%Z)%Z.
+  forall (p:addr), ((region (base p)) <= 0%Z)%Z ->
+  ((region (base (m p))) <= 0%Z)%Z.
 
 Axiom separated_included :
   forall (p:addr) (q:addr),
@@ -572,38 +573,32 @@ Theorem wp_goal :
   (forall (i2:Numbers.BinNums.Z),
    let a1 := shift a i2 in (i2 < i1)%Z -> (i <= i2)%Z -> ((t1 a1) = (t a1))) ->
   ((L_sum t1 a i i1) = (L_sum t a i i1)).
+(* Why3 intros t t1 a i i1 h1 h2 h3. *)
 Proof.
 intros M1 M2 t i j  H1 H2 H.
-assert (h: (i > j \/ i <= j)%Z ) by omega.
+assert (h: (i > j \/ i <= j)%Z ) by Lia.lia.
 destruct h.
-- rewrite Q_sum1.
-  rewrite Q_sum1.
+- rewrite Q_sum1;[ | Lia.lia | assumption].
+  rewrite Q_sum1;[ | Lia.lia | assumption].
   reflexivity.
-  all:auto with zarith.
-- generalize dependent H.
-  generalize dependent H0.
+- simpl in H. 
+  generalize dependent H.
   apply (Zlt_lower_bound_ind
   (fun j => 
-  (forall i2 : int, let a1 := shift t i2 in (i2 < j)%Z -> (i <= i2)%Z -> M2 a1 = M1 a1) ->
-  L_sum M2 t i j = L_sum M1 t i j) i).
+  (forall i2 : int, (i2 < j)%Z -> (i <= i2)%Z -> M2 (shift t i2) = M1 (shift t i2)) ->
+  L_sum M2 t i j = L_sum M1 t i j) i);[| Lia.lia].
   intros.
-  assert (h: (i = x \/ i < x)%Z) by omega.
+  assert (h: (i = x \/ i < x)%Z) by Lia.lia.
   destruct h.
-   * rewrite H4.
-     rewrite Q_sum1.
-     rewrite Q_sum1.
+   * rewrite H5.
+     rewrite Q_sum1;[ | Lia.lia | assumption].
+     rewrite Q_sum1;[ | Lia.lia | assumption].
      reflexivity.
-     all:auto with zarith.
-   * replace x with (1+(x-1))%Z by omega.
-     rewrite <- Q_sum2.
-     rewrite <- Q_sum2.
-     rewrite (H3 (x-1)%Z).
-     rewrite H.
+   * replace x with (1+(x-1))%Z by Lia.lia.
+     rewrite <- Q_sum2;[ | Lia.lia | assumption | apply H1].
+     rewrite <- Q_sum2;[ | Lia.lia | assumption | apply H2].
+     rewrite (H (x-1)%Z); [ | Lia.lia | intros;apply H4;[ Lia.lia | Lia.lia]].
+     rewrite H4 by Lia.lia.
      reflexivity.
-     all:auto with zarith.
-     intros.
-     apply H3.
-     omega.
-     assumption.
 Qed.
 
