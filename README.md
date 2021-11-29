@@ -34,23 +34,8 @@
             <td>DONE</td>
             <td></td>
         </tr>
-       <tr>
-            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/insertion_sort">Inserion sort</td>
-            <td>DONE</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/insertion_sort_swap">Insertion sort swap</td>
-            <td>DONE</td>
-            <td></td>
-        </tr>
         <tr>
             <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/maximum_elimination">Maximum elimination</td>
-            <td>DONE</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/selection_sort">Selection sort</td>
             <td>DONE</td>
             <td></td>
         </tr>
@@ -65,9 +50,59 @@
             <td>A relational property remains unproven (waiting for a RPP feature)</td>
         </tr>
         <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/insertion_sort">Inserion sort</td>
+            <td>DONE</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/insertion_sort_swap">Insertion sort swap</td>
+            <td>DONE</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/selection_sort">Selection sort</td>
+            <td>DONE</td>
+            <td></td>
+        </tr>
+        <tr>
             <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/bubblesort">Bubblesort</td>
             <td>DONE</td>
             <td></td>
         </tr>
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/quicksort">Quicksort</td>
+            <td>TODO</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/heapsort">Heapsort</td>
+            <td>TODO</td>
+            <td></td>
+        </tr>
+        <!-- <tr> -->
+        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/shellsort">Shellsort</td> -->
+        <!--     <td>TODO</td> -->
+        <!--     <td></td> -->
+        <!-- </tr> -->
+        <!-- <tr> -->
+        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/grallsort">Grallsort</td> -->
+        <!--     <td>TODO</td> -->
+        <!--     <td></td> -->
+        <!-- </tr> -->
+        <!-- <tr> -->
+        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/sqrtsort">Sqrtsort</td> -->
+        <!--     <td>TODO</td> -->
+        <!--     <td></td> -->
+        <!-- </tr> -->
+        <!-- <tr> -->
+        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/timsort">Timsort</td> -->
+        <!--     <td>TODO</td> -->
+        <!--     <td></td> -->
+        <!-- </tr> -->
+        <!-- <tr> -->
+        <!--     <td><a href = "https://github.com/lyonel2017/Frama-C-WP-Examples/tree/master/blocksort">Blocksort</td> -->
+        <!--     <td>TODO</td> -->
+        <!--     <td></td> -->
+        <!-- </tr> -->
 </tbody>
 </table>
