@@ -1,7 +1,7 @@
 #include <limits.h>
 
 /*@ predicate sorted(int* tab, integer first, integer last) =
- \forall integer x,y; first <= x < y < last ==> tab[x] <= tab[y];
+ \forall integer x,y; first <= x <= y < last ==> tab[x] <= tab[y];
 */
 
 /*@ predicate swap{L1, L2}(int *a, int *b, integer begin, integer i, integer j, integer end) =
@@ -17,23 +17,23 @@
 
 /*@ predicate partitioned(int *a, integer begin, integer end, integer pivot) =
       (\forall integer k; begin <= k < pivot ==> a[k] <= a[pivot]) &&
-      (\forall integer k; pivot < k < end ==> a[pivot] < a[k]);
+      (\forall integer l; pivot < l < end ==> a[pivot] < a[l]);
 */
 
-//When all elements are leq than value at L1, they have to be leq than value at L2
+// When all elements are leq than value at L1, they have to be leq than value at L2
 /*@ predicate preserve_upper_bound{L1,L2}(int *a, integer begin, integer end, integer value) =
-      (\forall integer k; begin <= k < end ==> \at(a[k], L1) <= value) ==>
-      (\forall integer k; begin <= k < end ==> \at(a[k], L2) <= value);
+    (∀ int p; begin <= p < end ==>  \at(a[p],L1) <= value) ==>
+      (∀ int p; begin <= p < end ==>  \at(a[p],L2) <= value);
 */
 
 /*@ predicate preserve_all_upper_bounds{L1,L2}(int *a, integer begin, integer end) =
       (\forall integer v; preserve_upper_bound{L1,L2}(a, begin, end, v));
 */
 
-//When all elements are bigger than value at L1, they have to be bigger than value at L2
+// When all elements are bigger than value at L1, they have to be bigger than value at L2
 /*@ predicate preserve_lower_bound{L1,L2}(int *a, integer begin, integer end, integer value) =
-      (\forall integer k; begin <= k < end ==> \at(a[k], L1) > value) ==>
-      (\forall integer k; begin <= k < end ==> \at(a[k], L2) > value);
+   (∀ int p; begin <= p < end ==>  \at(a[p],L1) > value) ==>
+      (∀ int p; begin <= p < end ==>  \at(a[p],L2) > value);
 */
 
 /*@ predicate preserve_all_lower_bounds{L1,L2}(int *a, integer begin, integer end) =
@@ -60,9 +60,10 @@
  @   : (((v == a[l]) ? 1 : 0) + count_elt(a, l + 1, u, v));
  @*/
 
+// valid hier entfernen, das macht man nicht in predicates
 /*@
- @ predicate permutation(int *a, int *b, int l, int u) = 
- @   \valid(a + (l .. u - 1)) ∧  \valid(b + (l .. u - 1)) ∧ 
+ @ predicate permutation(int *a, int *b, int l, int u) =
+ @   \valid(a + (l .. u - 1)) ∧  \valid(b + (l .. u - 1)) ∧
  @     ∀ int v; count_elt(a, l, u, v) == count_elt(b, l, u, v);
  @*/
 
@@ -75,6 +76,7 @@
  @ ensures
  @      array[i] == \old(array[j])
  @   ∧  array[j] == \old(array[i]);
+
  @*/
 void swap(int *array, int i, int j)
 {
@@ -82,159 +84,137 @@ void swap(int *array, int i, int j)
   array[i] = array[j];
   array[j] = tmp;
 }
-
 /*@
  @ requires
- @   0 <= first < first + 1 < last < INT_MAX;
+ @   0 <= l < l + 1 < u < INT_MAX;
  @ requires
- @   \valid(t + (first .. last - 1));
- requires first <= pivot < last;
+ @   \valid(array + (l .. u - 1));
  @ assigns
- @   *(t + (first .. last - 1));
+ @   \nothing;
  @ ensures
- @   first <= \result < last;
- @ ensures
- @   partitioned(t, first, last, \result);
- @ ensures
- @   preserve_all_lower_bounds{Pre,Post}(t, first, last);
- @ ensures
- @   preserve_all_upper_bounds{Pre,Post}(t, first, last);
- @ ensures
- @   permutation(\old(t), t, first, last);
+ @   l <= \result < u;
  @*/
-
-int partition(int *t, int first, int last, int pivot)
+int choose_pivot(int *array, int l, int u)
 {
-  /*@ assert first <= pivot < last; */
-  /*@ assert \valid(t+pivot); */
-  int pivot_value = t[pivot];
-  preswap1:
-  swap(t, pivot, first);
-
-  //t[last] now contains the pivot element
-  int i = first + 1;
-  int j = last - 1;
-
+  return l + ((u - l) / 2);
+}
+/*@
+ @ requires
+ @   0 <= l < l + 1 < u < INT_MAX;
+ @ requires
+ @   \valid(array + (l .. u - 1));
+ @ assigns
+ @   *(array + (l .. u - 1));
+ @ ensures
+ @   l <= \result < u;
+ @ ensures
+ @   partitioned(array, l, u, \result);
+ @ ensures
+ @   ∀ int v; preserve_upper_bound{Pre,Post}(array, l, u, v);
+ @ ensures
+ @   ∀ int v; preserve_lower_bound{Pre,Post}(array, l, u, v);
+ @ ensures
+ @   permutation(\old(array), array, l, u);
+ @*/
+int partition(int *array, int l, int u)
+{
+  int i = l + 1;
+  int j = u - 1;
+  int m = choose_pivot(array, l, u);
+  preswap1: swap(array, l, m);
   /*@
    @ loop invariant
-   @   first < i <= j < last;
+   @   l < i <= j < u;
    @ loop invariant
-   @      (\forall int p; first < p < i ==>  t[p] <= pivot_value)
-   @   &&  (\forall int q; j < q < last ==>  pivot_value < t[q]);
+   @      (∀ int p; l < p < i ==>  array[p] <= array[l])
+   @   &&  (∀ int q; j < q < u ==>  array[l] < array[q]);
    @ loop invariant
-   @   \forall integer v; preserve_lower_bound{Pre,Here}(t, first, last, v);
+   @   ∀ int v; preserve_upper_bound{Pre,Here}(array, l, u, v);
    @ loop invariant
-   @   \forall integer v; preserve_upper_bound{Pre,Here}(t, first, last, v);
+   @   ∀ int v; preserve_lower_bound{Pre,Here}(array, l, u, v);
    @ loop invariant
-   @    	    permutation(\at(t, Pre), \at(t, Here), first, last);
+   @   permutation(\at(array, Pre), \at(array, Here), l, u);
    @ loop assigns
-   @   i, j, *(t + (first .. last - 1));
+   @   i, j, *(array + (l .. u - 1));
    @*/
   while (i < j)
   {
-    
-leftscan: 
-    //scan left
+  CurrentOuter:
     /*@
      @ loop invariant
-     @   first + 1 <= i <= j < last;
+     @   l + 1 <= i <= j < u;
      @ loop invariant
-     @   ∀ int p; \at(i, leftscan) <= p < i ==> 
-     @     t[p] <= pivot_value;
+     @   ∀ int p; \at(i, CurrentOuter) <= p < i ==> 
+     @     array[p] <= array[l];
      @ loop assigns
      @   i;
      @*/
-    while (i < j && t[i] <= pivot_value)
+    while (i < j && array[i] <= array[l])
     {
-
-      // t[i] is the leftmost element which is gt pivot_value or i==j
       i += 1;
     }
-    //@ assert \forall int p; first < p < i ==>  t[p] <= pivot_value;
-
-    rightscan: 
+    //@ assert ∀ int p; l < p < i ==>  array[p] <= array[l];
     /*@
      @ loop invariant
-     @   first + 1 <= i <= j < last;
+     @   l + 1 <= i <= j < u;
      @ loop invariant
-     @   \forall int q; j < q <= \at(j, rightscan) ==> 
-     @     pivot_value < t[q];
+     @   ∀ int q; j < q <= \at(j, CurrentOuter) ==> 
+     @     array[l] < array[q];
      @ loop assigns
      @   j;
      @*/
-    while (i < j && pivot_value < t[j])
+    while (i < j && array[l] < array[j])
     {
-
-      // t[j] is the rightmost element which is leq pivot_value or i==j
       j -= 1;
     }
-    //@ assert \forall int q; j < q < last ==>  pivot_value < t[q];
-
-    // only if i != j
+    //@ assert ∀ int q; j < q < u ==>  array[l] < array[q];
     if (i < j)
     {
-      //@ assert t[i] > pivot_value >= t[j];
-      preswap2: swap(t, i, j);
-       //@ assert t[i] <= pivot_value < t[j];
+      //@ assert array[i] > array[l] >= array[j];
+      swap(array, i, j);
+      //@ assert array[i] <= array[l] < array[j];
     }
   }
-  //did we walk one step to far? t[i] needs tp ne leq pivot_value, because it gets swapped to the front
-  if (pivot_value < t[i])
+  if (array[l] < array[i])
   {
     i -= 1;
   }
-  //swap first (which contains the pivot) to t[i] (which belongs in the lower partiton)
-  preswap3: swap(t, first, i);
+  swap(array, l, i);
   return i;
-
-}
-/*@ requires first >= 0 && last >= 0 && INT_MAX >= first && INT_MAX >= last ;
-    requires last > first;
-    assigns \nothing;
-    ensures \result >= first;
-    ensures last > \result;
-
-*/
-int choose_pivot(int *t, int first, int last)
-{ //retunr a pivot between first and last
-  int dist = (last - first);
-  int ret = first + dist / 2;
-
-  return ret;
 }
 
- /*@
-  @ requires
-  @   0 <= first <= last < INT_MAX;
-  @ requires
-  @   \valid(t + (first .. last - 1));
-  @ assigns
-  @   *(t + (first .. last - 1));
-  @ ensures
-  @   preserve_all_upper_bounds{Pre, Post}(t, first, last);
-  @ ensures
-  @   preserve_all_lower_bounds{Pre, Post}(t, first, last);
-  @ ensures
-  @   sorted(t, first, last);
-  @ ensures
-  @    	permutation(\old(t), t, first, last);
-  @*/
+/*@
+ @ requires
+ @   0 <= first <= last < INT_MAX;
+ @ requires
+ @   \valid(t + (first .. last - 1));
+ @ assigns
+ @   *(t + (first .. last - 1));
+ @ ensures
+ @   \forall int v; preserve_upper_bound{Pre, Post}(t, first, last, v);
+ @ ensures
+ @   \forall int v; preserve_lower_bound{Pre, Post}(t, first, last, v);
+ @ ensures
+ @   sorted(t, first, last);
+ @ ensures
+ @    	permutation(\old(t), t, first, last);
+ @*/
 void sort(int *t, int first, int last)
 {
-  if (first < last)
+  if (last - first <= 1)
   {
-    //@ assert same_elements{Pre, Here}(t, t, first, last);
-    int pivot = choose_pivot(t, first, last);
-    pivot = partition(t, first, last, pivot);
-    part:
-    sort(t, first, pivot);
-         //@ ghost int mm = pivot + 1;
-     //@ assert preserve_all_upper_bounds{Pre, Here}(t, first, last);
-     //@ assert preserve_all_lower_bounds{Pre, Here}(t, first, last);
-     //@ assert preserve_lower_bound{part, Here}(t, mm, last, t[pivot]);
-    sort(t, pivot + 1, last);
-         //@ assert preserve_upper_bound{part, Here}(t, first, pivot, t[pivot]);
-     //@ assert preserve_lower_bound{part, Here}(t, mm, last, t[pivot]);
+    return;
   }
-  return;
+    //@ assert 1 < last-first;
+    //@ assert same_elements{Pre, Here}(t, t, first, last);
+
+  int pivot = partition(t, first, last);
+part:
+  sort(t, first, pivot);
+  //@ assert \forall int v; preserve_upper_bound{Pre, Here}(t, first, last, v);
+  //@ assert \forall int v; preserve_lower_bound{Pre, Here}(t, first, last, v);
+  //@ assert preserve_lower_bound{part, Here}(t, pivot + 1, last, t[pivot]);
+  sort(t, pivot + 1, last);
+  //@ assert preserve_upper_bound{part, Here}(t, first, pivot, t[pivot]);
+  //@ assert preserve_lower_bound{part, Here}(t, pivot + 1, last, t[pivot]);
 }
