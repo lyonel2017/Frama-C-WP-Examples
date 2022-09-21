@@ -4,19 +4,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define BLOCKSIZE 3
-/*@
-assigns \nothing;
-*/
-void print_array(int *arr, int len)
-{
-  for (int j = 0; j < len; j++)
-  {
-    printf("%d ", arr[j]);
-  }
-  printf("\n");
-}
-
 /*@ predicate sorted(int* tab, integer first, integer last) =
  \forall integer x,y; first <= x <= y < last ==> tab[x] <= tab[y];
 */
@@ -72,10 +59,56 @@ void print_array(int *arr, int len)
 }*/
 
 /*@
- @ requires
- @      \valid(array + i)
- @   ∧  \valid(array + j);
-  requires \valid(array + (0 .. upper-1));
+
+  predicate array_lower_bound{L1}(int* arr, int n, int x, int begin, int *z, int q) =
+(\forall int v; 0 <= v < \at(x,L1) ==> \at(arr[begin+\at(z[v], L1)], L1) > q);
+
+  predicate array_upper_bound{L1}(int* arr, int n, int x, int last, int *z, int q) =
+(\forall int v; 0 <= v < \at(x,L1) ==> \at(arr[last-\at(z[v], L1)], L1) <= q);
+
+lemma array_lower_bound_next{L1, L2}:
+\forall int *arr, n, x, begin, *z, q;
+(\at(x, L1) != \at(x, L2) ==> array_lower_bound{L1}(arr, n, x, begin, z, q)) &&
+(\at(x, L1) != \at(x, L2) ==> same_array{L1, L2}(arr, arr, 0, n)) &&
+(\at(x, L1) != \at(x, L2) ==> same_array{L1, L2}(z, z, 0, \at(x, L1))) &&
+(\at(x, L1) != \at(x, L2) ==> \at(x, L1) + 1 == \at(x, L2)) &&
+(\at(x, L1) != \at(x, L2) ==> \at(arr[begin+\at(z[x-1], L2)], L2) > q) ==>
+(\at(x, L1) != \at(x, L2) ==> array_lower_bound{L2}(arr, n, x, begin, z, q));
+*/
+
+/*@
+
+  predicate all_in_block_are_bigger(int* arr, int n, int x, int begin, int *z, int q) =
+  \forall int v; 0 <= v < x ==> arr[begin + z[v]] > q;
+
+    predicate all_in_block_are_lower(int* arr, int n, int x, int last, int *z, int q) =
+  \forall int v; 0 <= v < x ==> arr[last - z[v]] <= q;
+
+*/
+// /*@
+
+// lemma same_array_implication{L1, L2}:
+// \forall int q, *arr, n, x, y;
+// same_array{L1,L2}(arr, arr, 0, n) &&
+// array_upper_bound{L1}(arr, n, x, y, q) ==>
+// array_upper_bound{L2}(arr, n, x, y, q);
+
+// */
+
+/*@
+
+lemma swap_compare{L1,L2}:
+\forall int *arr, upper, x, y, q;
+0<= x <upper &&
+0<= y <upper ==>
+\at(arr[x],L1) <= q &&
+swap{L1,L2}(arr, arr, 0, x, y, upper) ==>
+\at(arr[y], L2) <= q;
+
+
+*/
+/*@
+
   requires i >=0 && i< upper;
     requires j >=0 && j< upper;
  @ assigns
@@ -95,6 +128,10 @@ void swap(int *array, int i, int j,
 }
 
 /*@
+ensures a <=b ==> \result == a;
+ensures a >= b ==> \result == b;
+ensures \result <= a;
+ensures \result <= b;
 assigns \nothing;
 
 
@@ -104,276 +141,159 @@ int min(int a, int b)
   return (a < b ? a : b);
 }
 
-// /*@
-//  @ requires
-//  @   0 <= begin < begin + 1 < end < INT_MAX;
-//  requires end <= upper;
-//  requires begin <= pivot_position < end;
-//  @ requires
-//  @   \valid(arr + (0 .. upper-1));
-//  @ assigns
-//  @   *(arr + (begin .. end - 1));
-//  @ ensures
-//  @   begin <= \result < end;
-//  @ ensures
-//  @   partitioned(arr, begin, end, \result);
-//  @ ensures
-//  @   ∀ int v; preserve_upper_bound{Pre,Post}(arr, begin, end, v);
-//  @ ensures
-//  @   ∀ int v; preserve_lower_bound{Pre,Post}(arr, begin, end, v);
-//  @
-//  @   ensures same_elements{Pre, Post}( arr, arr, 0, upper);
-//  @*/
-// int block_partition(int *arr, int begin, int end,
-//                     int pivot_position,
-//                     /* ghost: */ int upper)
-// {
-//   int blocksize = BLOCKSIZE;
-//   int indexL[BLOCKSIZE], indexR[BLOCKSIZE];
+/*@
+ @ requires
+ @   0  <upper;
 
-//   int last = end - 1;
-//   int first = begin;
-//   swap(arr, pivot_position, last, end);
-//   //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-//   const int pivot = arr[last];
-//   pivot_position = last;
-//   last--;
+ @ requires
+ @   \valid(arr+(0..upper-1));
 
-//   int num_left = 0;
-//   int num_right = 0;
-//   int start_left = 0;
-//   int start_right = 0;
-//   int num;
-
-//   // main loop
-//   /*@
-//  @ loop invariant
-//  @   begin <= first <= last < end ;
-//  @ loop invariant
-//  @      (∀ int p; begin < p < first ==>  arr[p] < pivot)
-//  @   &&  (∀ int q; last < q < end ==>  pivot <= arr[q]);
-//  @ loop invariant
-//  @   ∀ int v; preserve_upper_bound{Pre,Here}(arr, begin, end, v);
-//  @ loop invariant
-//  @   ∀ int v; preserve_lower_bound{Pre,Here}(arr, begin, end, v);
-//  @ loop invariant
-//  @   same_elements{Pre, Here}(arr, arr, 0, upper);
-//  @ loop assigns
-//  @   first, last, *(arr + (last .. begin - 1)), num_left, num_right, start_left, start_right;
-//  @ loop variant last-first;
-//  @*/
-//   while (last - first + 1 > 2 * BLOCKSIZE)
-//   {
-//     // Compare and store in buffers
-//     if (num_left == 0)
-//     {
-//       start_left = 0;
-
-//       /*@
-
-// @ loop invariant
-// @   \forall int v; 0<=v < num_left  ==> arr[first + indexL[v]] >= pivot;
-// @ loop invariant
-// @   \forall int v; 0<=v < j &&
-// ! ( \exists int w; 0 <=w < num_left ==> indexL[w] == v) ==> arr[first+v] < pivot;
-//  @ loop invariant
-//  @   same_elements{Pre, Here}(arr, arr, 0, upper);
-// @ loop assigns num_left, indexL[0..blocksize-1], j;
-//       */
-//       for (int j = 0; j < BLOCKSIZE; j++)
-//       {
-//         if (!(arr[first + j] < pivot))
-//         {
-//           indexL[num_left] = j;
-
-//           //@ assert arr[first + indexL[num_left]] >= pivot;
-//           //@ assert \forall int v; 0<=v < num_left  ==> arr[first + indexL[v]] >= pivot;
-//           num_left += 1;
-//         }
-//         else
-//         {
-//           //@ assert arr[first + j] < pivot;
-//         }
-//         //@ assert  (\exists int w; 0<=w<num_left && indexL[w] == j) ==> arr[first+j] >= pivot;
-//         //@ assert ( !(\exists int w; 0<=w<num_left-1 && indexL[w] == j)) ==> arr[first+j] < pivot;
-//       }
-//     }
-
-//     //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-//     if (num_right == 0)
-//     {
-//       start_right = 0;
-//       /*@
-//             @ loop invariant
-//       @   \forall int v; 0<=v < num_right  ==> arr[last - indexR[v]] <= pivot;
-//        @ loop invariant
-//  @   same_elements{Pre, Here}(arr, arr, 0, upper);
-//       @ loop assigns num_right, indexR[0..blocksize-1], j;
-//       */
-//       for (int j = 0; j < BLOCKSIZE; j++)
-//       {
-//         if (!(pivot < arr[last - j]))
-//         {
-//           indexR[num_right] = j;
-//           //@ assert arr[last - indexR[num_right]] <= pivot;
-//           //@ assert \forall int v; 0<=v < num_right  ==> arr[last - indexR[v]] <= pivot;
-//           num_right += 1;
-//         }
-//       }
-//     }
-
-//     //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-//     // rearrange elements
-//     num = min(num_left, num_right);
-//     /*@
-//      @ loop invariant
-//  @   same_elements{Pre, Here}(arr, arr, 0, upper);
-//  */
-//     for (int j = 0; j < num; j++)
-//     {
-//       swap(arr, first + indexL[start_left + j], last - indexR[start_right + j], upper);
-
-//       //@ assert same_elements{LoopCurrent, Here}(arr, arr, 0, upper);
-//       //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-//     }
-
-//     num_left -= num;
-//     num_right -= num;
-//     start_left += num;
-//     start_right += num;
-//     first += (num_left == 0) ? BLOCKSIZE : 0;
-//     last -= (num_right == 0) ? BLOCKSIZE : 0;
-
-//   } // end main loop
-
-//   print_array(arr, upper);
-//   printf("\n");
-//   printf("first: %i\n", first);
-//   printf("last: %i\n", last);
-//   printf("begin: %i\n", begin);
-//   printf("end: %i\n", end);
-
-//   // Compare and store in buffers final iteration
-//   int shiftR = 0, shiftL = 0;
-//   if (num_right == 0 && num_left == 0)
-//   { // for small arrays or in the unlikely
-//     // case that both buffers are empty
-//     shiftL = ((last - begin) + 1) / 2;
-//     shiftR = (last - begin) + 1 - shiftL;
-//     assert(shiftL >= 0);
-//     assert(shiftL <= BLOCKSIZE);
-//     assert(shiftR >= 0);
-//     assert(shiftR <= BLOCKSIZE);
-//     start_left = 0;
-//     start_right = 0;
-//     for (int j = 0; j < shiftL; j++)
-//     {
-//       indexL[num_left] = j;
-//       num_left += (!(arr[begin + j] < pivot));
-//       indexR[num_right] = j;
-//       num_right += !(pivot < arr[last - j]);
-//     }
-//     if (shiftL < shiftR)
-//     {
-//       assert(shiftL + 1 == shiftR);
-//       indexR[num_right] = shiftR - 1;
-//       num_right += !(pivot < arr[last - shiftR + 1]);
-//     }
-//   }
-//   else if (num_right != 0)
-//   {
-//     shiftL = (last - begin) - BLOCKSIZE + 1;
-//     shiftR = BLOCKSIZE;
-//     assert(shiftL >= 0);
-//     assert(shiftL <= BLOCKSIZE);
-//     assert(num_left == 0);
-//     start_left = 0;
-//     for (int j = 0; j < shiftL; j++)
-//     {
-//       indexL[num_left] = j;
-//       num_left += (!(arr[begin + j] < pivot));
-//     }
-//   }
-//   else
-//   {
-//     shiftL = BLOCKSIZE;
-//     shiftR = (last - begin) - BLOCKSIZE + 1;
-//     assert(shiftR >= 0);
-//     assert(shiftR <= BLOCKSIZE);
-//     assert(num_right == 0);
-//     start_right = 0;
-//     for (int j = 0; j < shiftR; j++)
-//     {
-//       indexR[num_right] = j;
-//       num_right += !((pivot < arr[last - j]));
-//     }
-//   }
-
-//   // rearrange final iteration
-//   num = min(num_left, num_right);
-//   for (int j = 0; j < num; j++)
-//     swap(arr, begin + indexL[start_left + j], last - indexR[start_right + j], end);
-
-//   num_left -= num;
-//   num_right -= num;
-//   start_left += num;
-//   start_right += num;
-//   begin += (num_left == 0) ? shiftL : 0;
-//   last -= (num_right == 0) ? shiftR : 0;
-//   // end final iteration
-
-//   // rearrange elements remaining in buffer
-//   if (num_left != 0)
-//   {
-
-//     assert(num_right == 0);
-//     int lowerI = start_left + num_left - 1;
-//     int upper = last - begin;
-//     // search first element to be swapped
-//     while (lowerI >= start_left && indexL[lowerI] == upper)
-//     {
-//       upper--;
-//       lowerI--;
-//     }
-//     while (lowerI >= start_left)
-//       swap(arr, begin + upper--, begin + indexL[lowerI--], end);
-
-//     swap(arr, pivot_position, begin + upper + 1, end); // fetch the pivot
-//     return begin + upper + 1;
-//   }
-//   else if (num_right != 0)
-//   {
-//     assert(num_left == 0);
-//     int lowerI = start_right + num_right - 1;
-//     int upper = last - begin;
-//     // search first element to be swapped
-//     while (lowerI >= start_right && indexR[lowerI] == upper)
-//     {
-//       upper--;
-//       lowerI--;
-//     }
-
-//     while (lowerI >= start_right)
-//       swap(arr, last - upper--, last - indexR[lowerI--], end);
-
-//     swap(arr, pivot_position, last - upper, end); // fetch the pivot
-//     return last - upper;
-//   }
-//   else
-//   { // no remaining elements
-//     assert(last + 1 == begin);
-//     swap(arr, pivot_position, begin, end); // fetch the pivot
-//     return begin;
-//   }
-// }
+ensures \false;
+ensures same_elements{Pre, Post}(arr, arr, 0, upper);
+ @
+ @*/
+void test(int *arr, int end, int upper)
+{
+  return;
+}
 
 /*@
  @ requires
- @   0 <= begin < begin + 1 < end < INT_MAX;
- requires end <= upper;
- requires begin <= pivot_position < end;
+ @   0< end < upper;
+requires \valid(arr+(0..upper));
+requires \valid(arr+(0..upper));
+
+
+
+
+ @*/
+void test2(int *arr, int *arr2, int begin, int end, int pivot_position, /* ghost: */ int upper)
+{
+  arr[1] = 0;
+  arr2[end] = 1;
+  //@ assert arr[1] == 0;
+
+  return;
+}
+
+/*@ requires 0 ≤ begin < begin + 1 < end;
+    requires begin ≤ pivot_position < end;
+
+    ensures \false;
+ */
+int test3(int *arr, int begin, int end,
+          int pivot_position, int upper)
+{
+  int pivot_location = begin;
+  int q = arr[pivot_location];
+
+  /*@
+
+
+  loop invariant all_that_existL:  arr[begin] > q;
+  */
+  while (end - begin + 1 > 2 * 3)
+  {
+    end++;
+  }
+  return 1;
+}
+/*@
  @ requires
- @   \valid(arr + (0 .. upper-1));
+ @   0 <= l < l + 1 < u < INT_MAX;
+ requires u <= upper;
+   terminates \true;
+ @ assigns
+ @   *(array + (l .. u - 1));
+ @ ensures
+ @   l <= \result < u;
+ @ ensures
+ @   partitioned(array, l, u, \result);
+ @ ensures
+ @   \forall int v; preserve_upper_bound{Pre,Post}(array, l, u, v);
+ @ ensures
+ @   \forall int v; preserve_lower_bound{Pre,Post}(array, l, u, v);
+ @
+ @   ensures same_elements{Pre, Post}( array, array, 0, upper);
+ @*/
+int partition_pivot(int *array, int l, int u, int pivot_value,
+                    /* ghost: */ int upper)
+{
+  int i = l;
+  int j = u - 1;
+preswap1:
+
+  //@ assert same_elements{Pre, Here}(array, array, 0, upper);
+  /*@
+   @ loop invariant
+   @   l < i <= j < u;
+   @ loop invariant
+   @      (\forall int p; l < p < i ==>  array[p] <= pivot_value)
+   @   &&  (\forall int q; j < q < u ==>  pivot_value < array[q]);
+   @ loop invariant
+   @   \forall int v; preserve_upper_bound{Pre,Here}(array, l, u, v);
+   @ loop invariant
+   @   \forall int v; preserve_lower_bound{Pre,Here}(array, l, u, v);
+   @ loop invariant
+   @   same_elements{Pre, Here}(array, array, 0, upper);
+   @ loop assigns
+   @   i, j, *(array + (l+1 .. u - 1));
+   @ loop variant j-i;
+   @*/
+  while (i < j)
+  {
+  scan1:
+    /*@
+     @ loop invariant
+     @   l < i <= j < u;
+     @ loop invariant
+     @   \forall int p; \at(i, scan1) <= p < i ==>
+     @     array[p] <= pivot_value;
+     @ loop assigns
+     @   i;
+     @ loop variant j-i;
+     @*/
+    while (i < j && array[i] <= pivot_value)
+    {
+      i += 1;
+    }
+  scan2:
+    //@ assert \forall int p; l < p < i ==>  array[p] <= pivot_value;
+    /*@
+     @ loop invariant
+     @   l < i <= j < u;
+     @ loop invariant
+     @   \forall int q; j < q <= \at(j, scan2) ==>
+     @     pivot_value < array[q];
+     @ loop assigns
+     @   j;
+     @ loop variant j-i;
+     @*/
+    while (i < j && pivot_value < array[j])
+    {
+      j -= 1;
+    }
+    //@ assert \forall int q; j < q < u ==>  pivot_value < array[q];
+    if (i < j)
+    {
+      //@ assert array[i] > pivot_value >= array[j];
+      swap(array, i, j,
+           /*ghost: */ upper);
+      //@ assert array[i] <= pivot_value < array[j];
+    }
+  } // End of outer loop
+  if (array[i] > pivot_value)
+  {
+    i -= 1;
+  }
+
+  return i;
+}
+/*@
+ @ requires
+ @   0 <= begin < begin + 1 < end ;
+ requires begin <= pivot_position < end;
+
  @ assigns
  @   *(arr + (begin .. end - 1));
  @ ensures
@@ -384,27 +304,20 @@ int min(int a, int b)
  @   ∀ int v; preserve_upper_bound{Pre,Post}(arr, begin, end, v);
  @ ensures
  @   ∀ int v; preserve_lower_bound{Pre,Post}(arr, begin, end, v);
- @
- @   ensures same_elements{Pre, Post}( arr, arr, 0, upper);
  @*/
 int block_partition_hoare_finish(int *arr, int begin, int end, int pivot_position, /* ghost: */ int upper)
 {
-
-  const int blocksize = BLOCKSIZE;
-  Blocksize:
-
-  print_array(arr + begin, end - begin);
+  // print_array(arr + begin, end - begin);
   int last = end - 1;
-  int indexL[BLOCKSIZE] = {0}, indexR[BLOCKSIZE] = {0};
-  print_array(indexL, BLOCKSIZE);
-  //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
+
   swap(arr, pivot_position, begin, upper);
   //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
   int pivot_location = begin;
   int q = arr[pivot_location];
-  printf("block_partition: ");
+  begin++;
+  // printf("block_partition: ");
 
-  printf("pivot: %i\n", q);
+  // printf("pivot: %i\n", q);
   int temp;
   int iL = 0;
   int iR = 0;
@@ -412,140 +325,188 @@ int block_partition_hoare_finish(int *arr, int begin, int end, int pivot_positio
   int sR = 0;
   int j;
   int num;
+
+  int indexL1[3] = {0}, indexR1[3] = {0};
+  int *indexL = indexL1;
+  int *indexR = indexR1;
+  // //@ assert \separated(arr+(0..upper-1), indexL+(0..3));
   /*@
   loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
+
+  loop invariant indexL_bounds: \forall int v; 0<=v<3 ==> 0<=indexL[v]<3;
+  loop invariant indexR_bounds: \forall int v; 0<=v<3 ==> 0<=indexR[v]<3;
+
   loop invariant \forall int v; \at(begin, Pre) <= v < begin ==> arr[v] <= q;  //0-begin are smaller
   loop invariant \forall int v; last <= v < end ==> arr[v] > q;  //last-end are bigger
+
+  loop invariant all_that_existL: \forall int v; 0 <= v < 3 ==> ((\exists int i; 0<=i<iL ==> indexL[i] == v) ==> arr[begin+v] > q);
+  loop invariant all_that_dont_existL: \forall int v; 0 <= v < 3 ==> ((!\exists int i; 0<=i<iL ==> indexL[i] == v) ==> arr[begin+v] <= q);
+  loop invariant all_that_existR: \forall int v; 0 <= v < 3 ==> ((\exists int i; 0<=i<iR ==> indexR[i] == v) ==> arr[last-v] <= q);
+  loop invariant all_that_dont_existR: \forall int v; 0 <= v < 3 ==> ((!\exists int i; 0<=i<iR ==> indexR[i] == v) ==> arr[last-v] > q);
   */
-  while (last - begin + 1 > 2 * BLOCKSIZE)
+  while (last - begin + 1 > 2 * 3)
   {
-    printf("Main loop\n");
-    print_array(arr, upper);
+    // //print_array(arr, upper);
+
+    //@ assert begin + 3-1 <upper;
+
     if (iL == 0)
     {
       sL = 0;
-      //@ assert iL == 0;
-      //@ assert blocksize >0 ;
       /*@
-      loop invariant 0 <= iL < blocksize;
-      loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
+      loop invariant 0<= j <= 3;
+      loop invariant 0 <= iL <= j;
       loop invariant \forall int v; \at(begin, Pre) <= v < begin ==> arr[v] <= q;  //0-begin are smaller
-      loop invariant \forall int v; 0 <= v < iL ==> arr[begin + indexL[v]] > q;
-      loop invariant same_array{LoopCurrent, Here}(&indexL[0], &indexL[0], 0, iL-1);
-      loop invariant same_array{LoopCurrent, Here}(arr, arr, 0, upper);
-      loop assigns indexL[0..blocksize-1], iL;
+
+      loop invariant indexL_unchanged: same_array{LoopCurrent, Here}(indexL, indexL, 0, iL-1);
+
+      //bounds on the contents of indexL
+      loop invariant indexL_bounds: \forall int v; 0<=v<3 ==> 0<=indexL[v]<3;
+
+      loop invariant all_that_exist: \forall int v; 0 <= v < 3 ==> ((\exists int i; 0<=i<iL ==> indexL[i] == v) ==> arr[begin+v] > q);
+      loop invariant all_that_dont_exist: \forall int v; 0 <= v < 3 ==> ((!\exists int i; 0<=i<iL ==> indexL[i] == v) ==> arr[begin+v] <= q);
+
+      loop invariant array_lower_bound(arr, upper, iL, begin, indexL, q);
+      loop assigns indexL[0..3-1];
+      loop assigns iL, j;
       */
-      for (j = 0; j < BLOCKSIZE; j++)
+      for (j = 0; j < 3; j++)
       {
-      prelscan:
-        if (!(arr[begin + j] <= q))
-        {
-          indexL[iL] = j;
-          //@ assert arr[begin + indexL[iL]] > q;
-          iL += 1;
-          //@ assert (\forall int v; 0 <= v < \at(iL,LoopCurrent) ==> arr[begin + indexL[v]] > q) ==> (\forall int v; 0<= v < iL ==> arr[begin + indexL[v]] > q);
-        }
-        //@ assert same_array{LoopCurrent, Here}(&indexL[0], &indexL[0], 0, iL-1);
-        //@ assert (\forall int v; 0 <= v < \at(iL,LoopCurrent) ==> arr[begin + \at(indexL[v],LoopCurrent)] > q) ==> (\forall int v; 0<= v < iL ==> arr[begin + indexL[v]] > q);
 
-        //@ assert (iL > 0) ==> arr[begin + indexL[iL-1]] >q;
+        //@ assert same_array{LoopCurrent, Here}(arr, arr, 0, upper);
+        //@ assert 0<= iL <3;
+        indexL[iL] = j;
 
-        //@ assert \forall int v; \at(begin, Pre) <= v < begin ==> arr[v] <= q;
-        // printf("left scan: j=%i, iL=%i ", j, iL);
-        // print_array(indexL, BLOCKSIZE);
+        // bounds on the members of indexL
+        //@ assert 0<=indexL[iL]<3;
+        // @ assert array_upper_bound(arr, upper, iL, begin, indexL, q);
+        iL += !(arr[begin + j] <= q);
+
+        //@ assert \at(iL, LoopCurrent) != iL ==> arr[begin + j] > q && \at(iL, LoopCurrent) +1 == iL;
+
+        //@ assert \separated(arr+(0..upper-1), indexL+(0..3));
+
+        // force lemma
+        //@ assert (\at(iL, LoopCurrent) != \at(iL, Here) ==> array_lower_bound{LoopCurrent}(arr, upper, iL, begin, indexL, q));
+        //@ assert (\at(iL, LoopCurrent) != \at(iL, Here) ==> same_array{LoopCurrent, Here}(arr, arr, 0, upper));
+        //@ assert (\at(iL, LoopCurrent) != \at(iL, Here) ==> same_array{LoopCurrent, Here}(indexL, indexL, 0, \at(iL, LoopCurrent)));
+        //@ assert (\at(iL, LoopCurrent) != \at(iL, Here) ==> \at(iL, LoopCurrent) + 1 == \at(iL, Here));
+        //@ assert (\at(iL, LoopCurrent) != \at(iL, Here) ==> \at(arr[begin+\at(indexL[iL-1], Here)], Here) > q);
+
+        //@ assert \at(iL, LoopCurrent) != iL ==> array_lower_bound(arr, upper, iL, begin, indexL, q);
+
+        //@ assert \at(iL, LoopCurrent) == iL ==> arr[begin + j] <= q;
+        //@ assert array_lower_bound(arr, upper, iL, begin, indexL, q);
       }
     }
     if (iR == 0)
     {
       sR = 0;
       /*@
-      loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
-      loop invariant \forall int v; last < v < end ==> arr[v] > q;  //0-begin are smaller
+      loop invariant 0<= j <= 3;
+      loop invariant 0 <= iR <= j;
+      loop invariant \forall int v; last <= v < end ==> arr[v] > q;  //last-end are bigger
 
+      loop invariant indexL_unchanged: same_array{LoopCurrent, Here}(indexR, indexR, 0, iR-1);
+
+      //bounds on the contents of indexR
+      loop invariant indexR_bounds: \forall int v; 0<=v<3 ==> 0<=indexR[v]<3;
+
+      loop invariant all_that_exist: \forall int v; 0 <= v < 3 ==> ((\exists int i; 0<=i<iR ==> indexR[i] == v) ==> arr[last-v] <= q);
+      loop invariant all_that_dont_exist: \forall int v; 0 <= v < 3 ==> ((!\exists int i; 0<=i<iR ==> indexR[i] == v) ==> arr[last-v] > q);
+
+      loop invariant array_lower_bound(arr, upper, iR, last, indexR, q);
+      loop assigns indexR[0..3-1];
+      loop assigns iR, j;
       */
-      for (j = 0; j < BLOCKSIZE; j++)
+      for (j = 0; j < 3; j++)
       {
-        if (!(q < arr[last - j]))
-        {
-          indexR[iR] = j;
-          //@ assert arr[last - indexR[iR]] <= q;
-          iR += 1;
-        }
-        printf("right scan: j=%i, iR=%i ", j, iR);
-        print_array(indexR, BLOCKSIZE);
+        //@ assert same_array{LoopCurrent, Here}(arr, arr, 0, upper);
+        //@ assert 0<= iR <3;
+        indexR[iR] = j;
+
+        // bounds on the members of indexR
+        //@ assert 0<=indexR[iR]<3;
+        // @ assert array_lower_bound(arr, upper, iR, last, indexR, q);
+        iR += !(q < arr[last - j]);
+
+        //@ assert \at(iR, LoopCurrent) != iR ==> arr[last - j] > q && \at(iR, LoopCurrent) +1 == iR;
+
+        // //@ assert \separated(arr+(0..upper-1), indexR+(0..3-1));
+
+        // force lemma
+        //@ assert array_lower_bound{LoopCurrent}(arr, upper, iR, last, indexR, q);
+        //@ assert same_array{LoopCurrent, Here}(arr, arr, 0, upper);
+        //@ assert same_array{LoopCurrent, Here}(indexR, indexR, 0, \at(iR, LoopCurrent));
+        //@ assert \at(iR, LoopCurrent) != iR ==> \at(iR, LoopCurrent) + 1 == \at(iR, Here);
+        //@ assert \at(iR, LoopCurrent) != iR ==> \at(arr[last-\at(indexL[iR-1], Here)], Here) > q ;
+
+        //@ assert \at(iR, LoopCurrent) != iR ==> array_lower_bound(arr, upper, iR, last, indexL, q);
+
+        //@ assert \at(iR, LoopCurrent) == iR ==> arr[last - j] > q;
+        //@ assert array_lower_bound(arr, upper, iL, last, indexR, q);
       }
     }
-    printf("indexL: ");
-    print_array(indexL, BLOCKSIZE);
-    printf("indexR: ");
-    print_array(indexR, BLOCKSIZE);
+
     num = min(iL, iR);
     if (num != 0)
     {
-      // printf("Swapping: ");
+
+      //@ assert array_upper_bound(arr, upper, num, begin, indexL, q);
+      //@ assert array_lower_bound(arr, upper, num, last, indexR, q);
 
       /*@
-loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
+
+      loop invariant lower: \forall int v; 0 <= v < j ==> arr[begin+indexL[sL+v]] > q;
+      loop invariant upper: \forall int v; 0 <= v < j ==> arr[last-indexR[sR+v]] <= q;
+
+      loop invariant lower: \forall int v; j <= v < num ==> arr[begin+indexL[sL+v]] <= q;
+      loop invariant upper: \forall int v; 0 <= v < num ==> arr[last-indexR[sR+v]] > q;
+
+      loop assigns arr[begin..last];
 
 */
       for (j = 0; j < num; j++)
       {
-        swap(arr, begin + indexL[sL + j], last - indexR[sR + j], upper);
+        int x = begin + indexL[sL + j];
+        int y = last - indexR[sR + j];
+
+      // //@ assert \separated(arr+(0..upper-1), indexR+(0..3-1));
+      // //@ assert \separated(arr+(0..upper-1), indexL+(0..3-1));
+      //@ assert arr[x] > q;
+      //@ assert arr[y] <= q;
+      preswap:
+        swap(arr, x, y, upper);
+        //@ assert arr[x] <= q;
+        //@ assert arr[begin + indexL[sL + j]] <= q;
+        //@ assert arr[y] > q;
+        //@ assert arr[last - indexR[sR + j]] > q;
       }
-      printf("swapping result: ");
-      print_array(arr, end);
+      // printf("swapping result: ");
+      // print_array(arr, end);
     }
     iL -= num;
     iR -= num;
     sL += num;
     sR += num;
     if (iL == 0)
-      begin += BLOCKSIZE;
+      begin += 3;
     if (iR == 0)
-      last -= BLOCKSIZE;
+      last -= 3;
     //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
   } // end main loop
-  begin--;
   last++;
-  /*@
-  loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
-
-  */
-  do
-  {
-    /*@
-
-      loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
-    */
-    do
-    {
-    } while (arr[++begin] <= q);
-    /*@
-      loop invariant same_elements{Pre, Here}(arr, arr, 0, upper);
-    */
-    do
-    {
-    } while (q < arr[--last]);
-    if (begin <= last)
-    {
-      swap(arr, begin, last, upper);
-      //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-    }
-  } while (begin <= last);
-  swap(arr, pivot_location, last, upper);
+  int mid = partition_pivot(arr, begin, last, q, upper);
+  swap(arr, pivot_location, mid, upper);
   //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-  printf("Partitioning result: ");
-  print_array(arr, end);
-  printf("demarcation line: %i\n\n", last);
-  //@ assert same_elements{Pre, Here}(arr, arr, 0, upper);
-  return last;
+
+  return mid;
 }
 
 /*@
  @ requires
  @   0 <= l < l + 1 < u < INT_MAX;
- @ requires
- @   \valid(array + (l .. u - 1));
+
  @ assigns
  @   \nothing;
  @ ensures
@@ -559,8 +520,7 @@ int choose_pivot(int *array, int l, int u)
 /*@
  @ requires
  @   0 <= first <= last < INT_MAX;
- @ requires
- @   \valid(t + (0 .. upper - 1));
+
  requires last <= upper;
  @ assigns
  @   *(t + (first .. last - 1));
@@ -579,38 +539,23 @@ void sort(int *t, int first, int last, int upper)
   {
     return;
   }
+
   //@ assert 1 < last-first;
   //@ assert same_elements{Pre, Here}(t, t, 0, upper);
   // sleep(1);
   int pivot = block_partition_hoare_finish(t, first, last, choose_pivot(t, first, last), last);
   //@ assert same_elements{Pre, Here}(t, t, 0, upper);
 part:
-  printf("leftsort(arr,%i,%i,%i)", first, pivot, upper);
+  // printf("leftsort(arr,%i,%i,%i)", first, pivot, upper);
   sort(t, first, pivot, upper);
   //@ assert same_elements{part, Here}(t, t, 0, upper);
   //@ assert same_elements{Pre, Here}(t, t, 0, upper);
   //@ assert \forall int v; preserve_upper_bound{Pre, Here}(t, first, last, v);
   //@ assert \forall int v; preserve_lower_bound{Pre, Here}(t, first, last, v);
   //@ assert preserve_lower_bound{part, Here}(t, pivot + 1, last, t[pivot]);
-  printf("rightsort(arr,%i,%i,%i)", pivot + 1, last, upper);
+  // printf("rightsort(arr,%i,%i,%i)", pivot + 1, last, upper);
   sort(t, pivot + 1, last, upper);
   //@ assert same_elements{Pre, Here}(t, t, 0, upper);
   //@ assert preserve_upper_bound{part, Here}(t, first, pivot, t[pivot]);
   //@ assert preserve_lower_bound{part, Here}(t, pivot + 1, last, t[pivot]);
-}
-
-int main()
-{
-
-  printf("\n\n\n\n\n\n\nNEW RUN\n\n\n");
-  int arr[10] = {1, 5, 2, 4, 8, 7, 5, 6, 9, 0};
-
-  // int loc = block_partition_hoare_finish(arr, 0, 10, 5, 10);
-  // printf("return value: %i\n", loc);
-
-  sort(arr, 0, 10, 10);
-
-  print_array(arr, 10);
-
-  return 0;
 }
